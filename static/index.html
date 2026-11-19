@@ -274,19 +274,19 @@ document.querySelectorAll("[data-keypad-digit]").forEach(button => {
 });
 
 document.querySelectorAll("[data-audio]").forEach(button => {
-  button.addEventListener("click", () => playRecording("/api/audio/" + button.dataset.audio));
+  button.addEventListener("click", () => { const event = button.dataset.audio; const localized = activeLanguage === "en" ? ({main_menu:"english_main_menu", idle:"english_idle", goodbye:"english_goodbye"}[event] || event) : event; playRecording("/api/audio/" + localized); });
 });
 
 $("idleDemoButton").addEventListener("click", async () => {
   idleDemoCount += 1;
   if (idleDemoCount === 1) {
     $("ivrReply").textContent = "First idle timeout: playing the reminder recording. Click again to simulate a second timeout.";
-    await playRecording("/api/audio/idle");
+    await playRecording(activeLanguage === "en" ? "/api/audio/english_idle" : "/api/audio/idle");
     return;
   }
   idleDemoCount = 0;
   $("ivrReply").textContent = "Second idle timeout: playing the goodbye recording. The main menu returns when playback finishes.";
-  await playRecording("/api/audio/goodbye");
+  await playRecording(activeLanguage === "en" ? "/api/audio/english_goodbye" : "/api/audio/goodbye");
   $("ivrChoices").replaceChildren();
   $("player").onended = () => {
     $("player").onended = null;
@@ -314,7 +314,7 @@ $("chatForm").addEventListener("submit", async event => {
     messages.push({role: "user", content: message}, {role: "assistant", content: data.reply});
     // Deliberately text-only: no SpeechSynthesis, browser TTS, or generated voice.
   } catch (error) {
-    addBubble("क्षमस्व: " + error.message, "bot");
+    addBubble((activeLanguage === "en" ? "Sorry: " : "क्षमस्व: ") + error.message, "bot");
   } finally {
     $("sendButton").disabled = false;
     $("sendButton").textContent = "Send";
