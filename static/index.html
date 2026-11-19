@@ -25,6 +25,8 @@
     #ivrReply{margin-top:13px;padding:12px;border-radius:12px;background:#0b1424;color:#c9d8ee;min-height:48px;font-size:13px;line-height:1.6}
     .audio-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.audio-actions button{font-size:12px;padding:9px 11px}
     .ivr-choices{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.ivr-choices button{font-size:12px;padding:10px 12px}.ivr-choices .back{border-color:#52627b;color:#c2d1e5}
+    .keypad{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-top:12px}.keypad button{text-align:center;padding:10px 6px;font-weight:800}.keypad button small{display:block;font-size:9px;font-weight:400;color:#9eb4d3;margin-top:2px}
+    .readiness{font-size:11px;color:#91a6c5;line-height:1.6;margin-top:10px}
     @media(max-width:760px){body{padding:14px}.columns{grid-template-columns:1fr}.hero{padding:24px}.chatbox{min-height:380px}.top{align-items:flex-start;flex-direction:column}}
     @media(max-width:390px){.menu{grid-template-columns:1fr}.composer{flex-direction:column}.send{padding:12px}}
   </style>
@@ -44,6 +46,12 @@
         <button data-digit="3"><b>३</b><span>शिष्यवृत्ती</span></button>
         <button data-digit="4"><b>४</b><span>प्रतिनिधी</span></button>
       </div>
+      <h2 style="margin-top:18px">Test keypad (0–9)</h2>
+      <p class="muted">0 returns to the main menu. 1–4 open the menu. 5–9 test invalid input.</p>
+      <div class="keypad" id="keypad">
+        <button data-keypad-digit="1">1</button><button data-keypad-digit="2">2</button><button data-keypad-digit="3">3</button><button data-keypad-digit="4">4</button><button data-keypad-digit="5">5</button>
+        <button data-keypad-digit="6">6</button><button data-keypad-digit="7">7</button><button data-keypad-digit="8">8</button><button data-keypad-digit="9">9</button><button data-keypad-digit="0">0<small>Main menu</small></button>
+      </div>
       <div id="ivrReply" role="status" aria-live="polite">पर्याय निवडा. हा फक्त डेमो आहे.</div>
       <div id="ivrChoices" class="ivr-choices" aria-label="More menu options"></div>
       <div class="audio-actions">
@@ -52,6 +60,7 @@
         <button data-audio="invalid">Play invalid-input message</button>
         <button data-audio="goodbye">Play goodbye</button>
       </div>
+      <p class="readiness" id="assetStatus">Checking prerecorded audio files…</p>
       <p class="notice">Option 1 has no dedicated recording yet. Option 4 audio is a recording only; this demo does not transfer calls.</p>
     </section>
     <section class="panel chatbox">
@@ -94,9 +103,16 @@ async function playRecording(url) {
 }
 
 fetch("/api/config").then(r => r.json()).then(c => {
-  $("status").textContent = c.ai_configured ? "NVIDIA AI connected" : "NVIDIA API key missing";
+  $("status").textContent = c.ai_configured ? "Menu ready · AI connected" : "Menu ready · AI key missing";
   $("modelChip").textContent = c.model;
 }).catch(() => { $("status").textContent = "Server unavailable"; });
+
+fetch("/api/demo-check").then(r => r.json()).then(c => {
+  const available = Object.entries(c.recordings).filter(([,ok]) => ok).length;
+  const total = Object.keys(c.recordings).length;
+  const missing = c.missing_recordings.length ? " Missing: " + c.missing_recordings.join(", ") + "." : "";
+  $("assetStatus").textContent = "Prerecorded audio: " + available + "/" + total + " files available." + missing + (c.ai_configured ? " AI chat configured." : " Menu works without AI; configure NVIDIA_API_KEY for chat.");
+}).catch(() => { $("assetStatus").textContent = "Could not check audio files."; });
 
 fetch("/api/greeting").then(r => r.json()).then(data => {
   $("greeting").textContent = data.text;
@@ -148,6 +164,9 @@ async function chooseIvrOption(digit, subOption = null) {
 
 document.querySelectorAll("[data-digit]").forEach(button => {
   button.addEventListener("click", () => chooseIvrOption(button.dataset.digit));
+});
+document.querySelectorAll("[data-keypad-digit]").forEach(button => {
+  button.addEventListener("click", () => chooseIvrOption(button.dataset.keypadDigit));
 });
 
 document.querySelectorAll("[data-audio]").forEach(button => {
