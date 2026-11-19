@@ -102,3 +102,16 @@ On Windows, double-click `start_demo.bat`. It creates a virtual environment if n
 The demo uses a numeric keypad: 0 returns to the main menu, 1–4 select the four services, and 5–9 demonstrate invalid input. The idle simulator plays the first idle reminder; on the second click it plays goodbye and returns to the main menu when playback finishes. The interface checks the prerecorded audio files and reports whether NVIDIA chat is configured. The menu and audio playback work without an NVIDIA API key; AI chat requires one.
 
 See [DEMO_CHECKLIST.md](DEMO_CHECKLIST.md) for the presentation sequence, setup checks, and limitations.
+
+
+## Demo complaint inbox (Discord webhook)
+
+The complaint submenu's first option opens a short form. Submissions are sent by the server to the Discord webhook configured in the `DISCORD_WEBHOOK_URL` environment variable. The webhook URL is a secret: never commit it, put it in HTML, or share it in screenshots. If a webhook URL has been exposed, delete/regenerate it in Discord before configuring the replacement.
+
+PowerShell (current terminal only; paste the regenerated URL locally, not into chat or GitHub):
+
+```powershell
+$env:DISCORD_WEBHOOK_URL = "PASTE_YOUR_REGENERATED_WEBHOOK_URL_HERE"
+` ```
+
+The form sends only a category and complaint description, requires a privacy confirmation, and then returns to the main menu after showing a receipt. Do not enter names, phone numbers, addresses, Aadhaar numbers, medical details, or other sensitive information. This is a demo inbox only, not an official complaint registration or case-tracking system. Before any real public deployment, add authentication, rate limiting, retention rules, and office approval; a bare webhook endpoint must not be exposed to the public internet.
