@@ -98,3 +98,36 @@ def test_editable_system_prompt_file_is_loaded():
     prompt = main.load_system_prompt()
     assert "prototype" in prompt.lower()
     assert "Custom instructions" in prompt or "operator instructions" in prompt
+
+
+
+def test_zero_returns_to_main_menu_with_recording():
+    response = client.post("/api/ivr/digit", json={"digit": "0"})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["ok"] is True
+    assert data["digit"] == "0"
+    assert data["audio_url"] == "/api/audio/main_menu"
+    assert len(data["choices"]) == 4
+
+
+def test_demo_check_reports_audio_and_never_claims_telephony():
+    response = client.get("/api/demo-check")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["ready_for_browser_demo"] is True
+    assert data["telephony_connected"] is False
+    assert data["synthetic_speech_enabled"] is False
+    assert data["option_1_recording_required"] is False
+    assert data["missing_recordings"] == []
+
+
+def test_each_menu_choice_has_expected_submenu_or_disclaimer():
+    for digit in ("1", "2", "3"):
+        response = client.post("/api/ivr/digit", json={"digit": digit})
+        assert response.status_code == 200
+        assert response.json()["choices"]
+    response = client.post("/api/ivr/digit", json={"digit": "4"})
+    assert response.status_code == 200
+    assert response.json()["choices"] == []
+    assert "हस्तांतरण होत नाही" in response.json()["message"]
