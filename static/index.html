@@ -144,7 +144,10 @@ async function chooseIvrOption(digit, subOption = null) {
         const button = document.createElement("button");
         button.type = "button";
         button.textContent = choice.digit + ". " + choice.label;
-        button.addEventListener("click", () => chooseIvrOption(digit, choice.digit));
+        button.addEventListener("click", () => {
+          if (digit === "0") chooseIvrOption(choice.digit);
+          else chooseIvrOption(digit, choice.digit);
+        });
         $("ivrChoices").appendChild(button);
       });
     }
