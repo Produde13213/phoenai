@@ -1,3 +1,5 @@
+import json
+
 from fastapi.testclient import TestClient
 
 import main
@@ -131,3 +133,51 @@ def test_each_menu_choice_has_expected_submenu_or_disclaimer():
     assert response.status_code == 200
     assert response.json()["choices"] == []
     assert "हस्तांतरण होत नाही" in response.json()["message"]
+
+
+
+def test_complaint_requires_configured_discord_webhook(monkeypatch):
+    monkeypatch.setattr(main, "DISCORD_WEBHOOK_URL", "")
+    response = client.post("/api/complaints", json={
+        "category": "Other",
+        "description": "A demo complaint description.",
+        "privacy_confirmed": True,
+    })
+    assert response.status_code == 503
+
+
+def test_complaint_requires_privacy_confirmation(monkeypatch):
+    monkeypatch.setattr(main, "DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/test/token")
+    response = client.post("/api/complaints", json={
+        "category": "Other",
+        "description": "A demo complaint description.",
+        "privacy_confirmed": False,
+    })
+    assert response.status_code == 400
+
+
+def test_complaint_posts_only_minimal_fields_and_returns_menu_signal(monkeypatch):
+    captured = {}
+
+    class FakeResponse:
+        status = 204
+        def __enter__(self): return self
+        def __exit__(self, *args): return False
+
+    def fake_urlopen(request, timeout):
+        captured["body"] = json.loads(request.data.decode("utf-8"))
+        captured["timeout"] = timeout
+        return FakeResponse()
+
+    monkeypatch.setattr(main, "DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/test/token")
+    monkeypatch.setattr(main, "urlopen", fake_urlopen)
+    response = client.post("/api/complaints", json={
+        "category": "Accessibility",
+        "description": "The entrance ramp needs repair.",
+        "privacy_confirmed": True,
+    })
+    assert response.status_code == 200
+    assert response.json()["return_to_main_menu"] is True
+    assert captured["body"]["embeds"][0]["fields"][0]["value"] == "Accessibility"
+    assert len(captured["body"]["embeds"][0]["fields"]) == 2
+    assert captured["timeout"] == 8
