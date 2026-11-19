@@ -24,7 +24,7 @@
     .send{background:#477ed0;border-color:#6398e6;padding:0 18px;font-weight:700}.notice{font-size:11px;color:#8195b3;line-height:1.6;margin-top:14px}
     #ivrReply{margin-top:13px;padding:12px;border-radius:12px;background:#0b1424;color:#c9d8ee;min-height:48px;font-size:13px;line-height:1.6}
     .audio-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.audio-actions button{font-size:12px;padding:9px 11px}
-    .ivr-choices{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.ivr-choices button{font-size:12px;padding:10px 12px}.ivr-choices .back{border-color:#52627b;color:#c2d1e5}
+    .ivr-choices{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.ivr-choices button{font-size:12px;padding:10px 12px}.ivr-choices .back{border-color:#52627b;color:#c2d1e5}.complaint-form{display:grid;gap:9px;width:100%;margin-top:10px;padding:13px;border:1px solid #344b6c;border-radius:13px;background:#0b1424}.complaint-form label{font-size:12px;color:#b9cbe5}.complaint-form select,.complaint-form textarea{width:100%;margin-top:5px;border:1px solid #344b6c;background:#101a2b;color:#eef4ff;border-radius:9px;padding:10px;font:inherit}.complaint-form textarea{min-height:100px;resize:vertical}.complaint-form button{background:#477ed0;text-align:center}.complaint-form .privacy{display:flex;gap:8px;align-items:flex-start}.complaint-form .privacy input{flex:0;width:auto;margin:2px 0 0}
     .keypad{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-top:12px}.keypad button{text-align:center;padding:10px 6px;font-weight:800}.keypad button small{display:block;font-size:9px;font-weight:400;color:#9eb4d3;margin-top:2px}
     .readiness{font-size:11px;color:#91a6c5;line-height:1.6;margin-top:10px}
     @media(max-width:760px){body{padding:14px}.columns{grid-template-columns:1fr}.hero{padding:24px}.chatbox{min-height:380px}.top{align-items:flex-start;flex-direction:column}}
@@ -139,6 +139,39 @@ async function chooseIvrOption(digit, subOption = null) {
     else if (digit === "1" && !subOption) {
       $("ivrReply").textContent += " (Button 1 recording has not been uploaded yet.)";
     }
+    if (digit === "1" && subOption === "1" && data.ok) {
+      const form = document.createElement("form");
+      form.className = "complaint-form";
+      form.innerHTML = '<label>Complaint category<select name="category" required><option value="">Select a category</option><option>Accessibility</option><option>School / Education</option><option>Scholarship</option><option>Other</option></select></label><label>Complaint description<textarea name="description" minlength="10" maxlength="1500" required placeholder="Describe the issue briefly. Do not include names, phone numbers, addresses, Aadhaar, medical details, or other personal information."></textarea></label><label class="privacy"><input name="privacy_confirmed" type="checkbox" required><span>I confirm this demo complaint contains no personal or sensitive information.</span></label><button type="submit">Submit demo complaint</button><p class="muted">This sends the text to the configured Discord inbox. It is not an official government complaint registration.</p>';
+      form.addEventListener("submit", async event => {
+        event.preventDefault();
+        const submit = form.querySelector("button[type=submit]");
+        submit.disabled = true;
+        submit.textContent = "Sending…";
+        const formData = new FormData(form);
+        try {
+          const result = await fetch("/api/complaints", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+              category: formData.get("category"),
+              description: formData.get("description"),
+              privacy_confirmed: formData.get("privacy_confirmed") === "on"
+            })
+          });
+          const answer = await result.json();
+          if (!result.ok) throw new Error(answer.detail || "Submission failed");
+          $("ivrChoices").replaceChildren();
+          $("ivrReply").textContent = answer.message + " Returning to the main menu…";
+          setTimeout(() => chooseIvrOption("0"), 2200);
+        } catch (error) {
+          $("ivrReply").textContent = "Could not submit: " + error.message;
+          submit.disabled = false;
+          submit.textContent = "Try again";
+        }
+      });
+      $("ivrChoices").appendChild(form);
+    }
     if (data.choices && data.choices.length) {
       data.choices.forEach(choice => {
         const button = document.createElement("button");
@@ -151,7 +184,7 @@ async function chooseIvrOption(digit, subOption = null) {
         $("ivrChoices").appendChild(button);
       });
     }
-    if (digit !== "0") {
+    if (digit !== "0" && !(digit === "1" && subOption === "1")) {
       const back = document.createElement("button");
       back.type = "button";
       back.className = "back";
