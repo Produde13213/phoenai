@@ -56,7 +56,7 @@
       <div id="ivrChoices" class="ivr-choices" aria-label="More menu options"></div>
       <div class="audio-actions">
         <button data-audio="main_menu">Play main menu</button>
-        <button data-audio="idle">Play idle message</button>
+        <button id="idleDemoButton" type="button">Simulate idle timeout</button>
         <button data-audio="invalid">Play invalid-input message</button>
         <button data-audio="goodbye">Play goodbye</button>
       </div>
@@ -76,6 +76,7 @@
 const $ = (id) => document.getElementById(id);
 const messages = [];
 let activeAudioUrl = null;
+let idleDemoCount = 0;
 
 function addBubble(text, role) {
   const node = document.createElement("div");
@@ -123,6 +124,7 @@ fetch("/api/greeting").then(r => r.json()).then(data => {
 }).catch(() => {});
 
 async function chooseIvrOption(digit, subOption = null) {
+  idleDemoCount = 0;
   $("ivrReply").textContent = "माहिती मिळवत आहे…";
   $("ivrChoices").replaceChildren();
   try {
@@ -152,8 +154,8 @@ async function chooseIvrOption(digit, subOption = null) {
       back.className = "back";
       back.textContent = "Main menu";
       back.addEventListener("click", () => {
-        $("ivrReply").textContent = "पर्याय निवडा. हा फक्त डेमो आहे.";
-        $("ivrChoices").replaceChildren();
+        idleDemoCount = 0;
+        chooseIvrOption("0");
       });
       $("ivrChoices").appendChild(back);
     }
@@ -171,6 +173,19 @@ document.querySelectorAll("[data-keypad-digit]").forEach(button => {
 
 document.querySelectorAll("[data-audio]").forEach(button => {
   button.addEventListener("click", () => playRecording("/api/audio/" + button.dataset.audio));
+});
+
+$("idleDemoButton").addEventListener("click", async () => {
+  idleDemoCount += 1;
+  if (idleDemoCount === 1) {
+    $("ivrReply").textContent = "First idle timeout: playing the reminder recording. Click again to simulate a second timeout.";
+    await playRecording("/api/audio/idle");
+    return;
+  }
+  idleDemoCount = 0;
+  $("ivrReply").textContent = "Second idle timeout: playing the goodbye recording, then returning to the main menu.";
+  await playRecording("/api/audio/goodbye");
+  $("ivrChoices").replaceChildren();
 });
 
 $("chatForm").addEventListener("submit", async event => {
