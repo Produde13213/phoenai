@@ -11,7 +11,7 @@
 7. Play the welcome recording once and set a comfortable speaker volume.
 8. Test menu options 1, 2, 3, and 4; test sub-options; press 0 to return to the main menu.
 9. Press 9 to demonstrate invalid input.
-10. Play the idle and goodbye recordings using the preview controls.
+10. Click Simulate idle timeout once to play the first reminder. Click it a second time to play goodbye and return to the main menu.
 11. Test AI chat only if the NVIDIA API key is already configured on the demo computer.
 
 ## What works without a phone number
