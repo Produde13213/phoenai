@@ -65,6 +65,22 @@ MENU = {
     },
 }
 
+
+EN_MENU = {
+    "1": {"title": "Complaint support", "message": "Choose an option for complaint support. Do not enter personal or sensitive information in this demo.", "choices": {
+        "1": {"label": "Submit a demo complaint", "message": "Use the form below to describe the issue briefly. Do not include names, phone numbers, addresses, Aadhaar, medical details, or other personal information."},
+        "2": {"label": "Check complaint status", "message": "This demo is not connected to the office complaint system, so it cannot check a complaint status. Contact the relevant office for an official update."}}},
+    "2": {"title": "School information", "message": "What school-related information do you need?", "choices": {
+        "1": {"label": "Admissions", "message": "Admission eligibility, documents and dates vary by school and applicable rules. Check current official information with the school or education department."},
+        "2": {"label": "Facilities and support", "message": "Ask the school directly for written details about accessibility facilities and student support. This demo has not verified facilities at any specific school."},
+        "3": {"label": "School-related complaint", "message": "Keep a brief description, school name and incident date ready. Check with the education department where to file an official complaint. This demo does not file one."}}},
+    "3": {"title": "Scholarships", "message": "What scholarship help do you need?", "choices": {
+        "1": {"label": "Eligibility", "message": "Eligibility varies by scheme. It cannot be confirmed without checking the official scheme name and current-year government notice."},
+        "2": {"label": "Application process", "message": "Before applying, check the official notice, application method, required documents and deadline. No application service is connected to this demo."},
+        "3": {"label": "Application status", "message": "This demo is not connected to a government scholarship portal and cannot check application status. Contact the official portal or department."}}},
+    "4": {"title": "Speak to a representative", "message": "A request to speak to a representative is not available in this demo. No live phone transfer takes place. An official office contact number has not been connected.", "choices": {}}
+}
+
 # Filenames intentionally match the files currently committed to GitHub.
 # Option 1 has no dedicated recording yet; never substitute synthetic speech.
 AUDIO_FILES = {
@@ -76,6 +92,17 @@ AUDIO_FILES = {
     "idle": "idle.wav",
     "main_menu": "mainmenu.wav",
     "goodbye": "bye.wav",
+    "language_english": "choiceeng.wav",
+    "language_hindi": "hinchoice.wav",
+    "english_greeting": "helloeng.wav",
+    "english_option_1": "complaineng.wav",
+    "english_option_2": "schoolinfoeng.wav",
+    "english_option_3": "scholershipeng.wav",
+    "english_option_4": "spekrep.wav",
+    "english_invalid": None,
+    "english_idle": "idleeng.wav",
+    "english_main_menu": "menueng.wav",
+    "english_goodbye": "byeeng.wav",
 }
 DIGIT_AUDIO = {"2": "option_2", "3": "option_3", "4": "option_4"}
 
@@ -108,6 +135,7 @@ SYSTEM_PROMPT = load_system_prompt()
 class DigitRequest(BaseModel):
     digit: str = Field(min_length=1, max_length=2)
     sub_option: str | None = Field(default=None, max_length=2)
+    language: Literal["mr", "en"] = "mr"
 
 
 class ComplaintRequest(BaseModel):
@@ -230,35 +258,30 @@ def select_digit(body: DigitRequest):
 
     # 0 always returns to the welcome/main menu.
     if digit == "0" and body.sub_option is None:
-        available = (ROOT / AUDIO_FILES["main_menu"]).is_file()
+        main_event = audio_prefix + "main_menu"
+        main_file = AUDIO_FILES.get(main_event) or AUDIO_FILES["main_menu"]
+        available = (ROOT / main_file).is_file()
         return {
             "ok": True,
             "digit": "0",
-            "title": "मुख्य मेनू",
-            "message": (
-                "नमस्कार! दिव्यांग कल्याण आयुक्तालयामध्ये आपले स्वागत आहे. "
-                "तक्रार निवारणासाठी एक दाबा. शाळाविषयक माहितीसाठी दोन दाबा. "
-                "शिष्यवृत्तीसाठी तीन दाबा. प्रतिनिधीशी बोलण्यासाठी चार दाबा."
-            ),
-            "choices": [{"digit": key, "label": value["title"]} for key, value in MENU.items()],
-            "audio_url": "/api/audio/main_menu" if available else None,
+            "title": "Main menu" if body.language == "en" else "मुख्य मेनू",
+            "message": ("Welcome to the Office of the Commissioner for Persons with Disabilities. Press 1 for complaint support, 2 for school information, 3 for scholarships, or 4 to request a representative." if body.language == "en" else "नमस्कार! दिव्यांग कल्याण आयुक्तालयामध्ये आपले स्वागत आहे. तक्रार निवारणासाठी एक दाबा. शाळाविषयक माहितीसाठी दोन दाबा. शिष्यवृत्तीसाठी तीन दाबा. प्रतिनिधीशी बोलण्यासाठी चार दाबा."),
+            "choices": [{"digit": key, "label": value["title"]} for key, value in active_menu.items()],
+            "audio_url": f"/api/audio/{main_event}" if available else None,
             "audio_available": available,
         }
 
-    if digit not in MENU:
-        return {
-            "ok": False,
-            "message": "कृपया १ ते ४ पैकी एक पर्याय निवडा.",
-            "choices": [],
-            "audio_url": "/api/audio/invalid" if (ROOT / AUDIO_FILES["invalid"]).is_file() else None,
-        }
+    if digit not in active_menu:
+        invalid_event = audio_prefix + "invalid"
+        invalid_file = AUDIO_FILES.get(invalid_event)
+        return {"ok": False, "message": "Please choose an option from 1 to 4." if body.language == "en" else "कृपया १ ते ४ पैकी एक पर्याय निवडा.", "choices": [], "audio_url": f"/api/audio/{invalid_event}" if invalid_file and (ROOT / invalid_file).is_file() else ("/api/audio/invalid" if body.language == "mr" and (ROOT / AUDIO_FILES["invalid"]).is_file() else None)}
 
-    selected = MENU[digit]
+    selected = active_menu[digit]
     if body.sub_option is not None:
         sub_option = body.sub_option.strip()
         choice = selected["choices"].get(sub_option)
         if choice is None:
-            return {"ok": False, "message": "कृपया दिलेल्या पर्यायांपैकी एक निवडा.", "choices": [], "audio_url": None}
+            return {"ok": False, "message": "Please choose one of the listed options." if body.language == "en" else "कृपया दिलेल्या पर्यायांपैकी एक निवडा.", "choices": [], "audio_url": None}
         return {
             "ok": True,
             "digit": digit,
@@ -270,8 +293,9 @@ def select_digit(body: DigitRequest):
             "audio_available": False,
         }
 
-    audio_event = DIGIT_AUDIO.get(digit)
-    audio_url = f"/api/audio/{audio_event}" if audio_event and (ROOT / AUDIO_FILES[audio_event]).is_file() else None
+    audio_event = (f"english_option_{digit}" if body.language == "en" else DIGIT_AUDIO.get(digit))
+    audio_file = AUDIO_FILES.get(audio_event) if audio_event else None
+    audio_url = f"/api/audio/{audio_event}" if audio_file and (ROOT / audio_file).is_file() else None
     return {
         "ok": True,
         "digit": digit,
