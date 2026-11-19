@@ -11,9 +11,8 @@ from pydantic import BaseModel, Field
 
 ROOT = Path(__file__).resolve().parent
 STATIC = ROOT / "static"
-AUDIO = ROOT / "ttsfree-marathi-take2.wav"
 
-# Load a local .env when present; OS environment variables remain supported.
+# Load .env if present. Windows OS environment variables are also supported.
 load_dotenv(ROOT / ".env")
 
 NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
@@ -24,7 +23,7 @@ API_KEY = os.getenv("NVIDIA_API_KEY", "").strip()
 app = FastAPI(
     title="PhoenAI",
     description="Marathi-language information assistant prototype",
-    version="0.2.0",
+    version="0.3.0",
 )
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
 
@@ -43,9 +42,23 @@ MENU = {
     },
     "4": {
         "title": "प्रतिनिधी",
-        "message": "प्रतिनिधीकडे कॉल हस्तांतरित करण्याची सुविधा अद्याप जोडलेली नाही. हा फक्त ब्राउझर डेमो आहे.",
+        "message": "हा ब्राउझर डेमो आहे. प्रत्यक्ष फोन कॉल किंवा प्रतिनिधीकडे हस्तांतरण होत नाही.",
     },
 }
+
+# Filenames intentionally match the files currently committed to GitHub.
+# Option 1 has no dedicated recording yet; never substitute synthetic speech.
+AUDIO_FILES = {
+    "greeting": "ttsfree-marathi-take2.wav",
+    "option_2": "SCHOOLINFO.wav",
+    "option_3": "schoolarship.wav",
+    "option_4": "talktorep.wav",
+    "invalid": "inavlid.wav",
+    "idle": "idle.wav",
+    "main_menu": "mainmenu.wav",
+    "goodbye": "bye.wav",
+}
+DIGIT_AUDIO = {"2": "option_2", "3": "option_3", "4": "option_4"}
 
 SYSTEM_PROMPT = """You are PhoenAI, a polite Marathi-first information assistant prototype for an office serving persons with disabilities in Maharashtra.
 Reply in clear, simple Marathi by default. If the user writes in English, you may reply in English.
@@ -55,30 +68,48 @@ If you do not know an official fact, say that you do not have verified informati
 Do not ask callers to share Aadhaar numbers, passwords, OTPs, bank details, medical records, or other sensitive personal information.
 This is a prototype, not an official government service. Do not claim otherwise."""
 
+
 class DigitRequest(BaseModel):
     digit: str = Field(min_length=1, max_length=2)
+
 
 class ChatMessage(BaseModel):
     role: Literal["user", "assistant"]
     content: str = Field(min_length=1, max_length=2000)
 
+
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
     history: list[ChatMessage] = Field(default_factory=list, max_length=8)
 
+
+def audio_path(event: str) -> Path:
+    filename = AUDIO_FILES.get(event)
+    if not filename:
+        raise HTTPException(status_code=404, detail="Unknown audio event")
+    path = ROOT / filename
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail=f"Recording is not available for: {event}")
+    return path
+
+
 @app.get("/")
 def home():
     return FileResponse(STATIC / "index.html")
+
 
 @app.get("/health")
 def health():
     return {
         "status": "ok",
         "service": "PhoenAI",
+        "version": app.version,
         "ai_configured": bool(API_KEY),
         "model": MODEL,
         "telephony_connected": False,
+        "synthetic_speech_enabled": False,
     }
+
 
 @app.get("/api/config")
 def config():
@@ -87,36 +118,67 @@ def config():
         "model": MODEL,
         "ai_configured": bool(API_KEY),
         "telephony_connected": False,
+        "synthetic_speech_enabled": False,
     }
+
 
 @app.get("/api/greeting")
 def greeting():
+    available = (ROOT / AUDIO_FILES["greeting"]).is_file()
     return {
         "text": (
             "नमस्कार! दिव्यांग कल्याण आयुक्तालयामध्ये आपले स्वागत आहे. "
             "तक्रार निवारणासाठी एक दाबा. शाळाविषयक माहितीसाठी दोन दाबा. "
             "शिष्यवृत्तीसाठी तीन दाबा. प्रतिनिधीशी बोलण्यासाठी चार दाबा."
         ),
-        "audio_available": AUDIO.is_file(),
-        "audio_url": "/api/greeting/audio" if AUDIO.is_file() else None,
+        "audio_available": available,
+        "audio_url": "/api/audio/greeting" if available else None,
     }
 
-@app.get("/api/greeting/audio")
-def greeting_audio():
-    if not AUDIO.is_file():
-        raise HTTPException(status_code=404, detail="Greeting audio file not found")
-    return FileResponse(AUDIO, media_type="audio/wav", filename=AUDIO.name)
+
+@app.get("/api/audio/{event}")
+def get_audio(event: str):
+    path = audio_path(event)
+    return FileResponse(path, media_type="audio/wav", filename=path.name)
+
+
+@app.get("/api/audio")
+def audio_catalog():
+    return {
+        event: {
+            "available": (ROOT / filename).is_file(),
+            "url": f"/api/audio/{event}" if (ROOT / filename).is_file() else None,
+            "filename": filename,
+        }
+        for event, filename in AUDIO_FILES.items()
+    }
+
 
 @app.get("/api/menu")
 def menu():
     return MENU
 
+
 @app.post("/api/ivr/digit")
 def select_digit(body: DigitRequest):
     digit = body.digit.strip()
     if digit not in MENU:
-        return {"ok": False, "message": "कृपया १ ते ४ पैकी एक पर्याय निवडा."}
-    return {"ok": True, "digit": digit, **MENU[digit]}
+        return {
+            "ok": False,
+            "message": "कृपया १ ते ४ पैकी एक पर्याय निवडा.",
+            "audio_url": "/api/audio/invalid" if (ROOT / AUDIO_FILES["invalid"]).is_file() else None,
+        }
+
+    audio_event = DIGIT_AUDIO.get(digit)
+    audio_url = f"/api/audio/{audio_event}" if audio_event and (ROOT / AUDIO_FILES[audio_event]).is_file() else None
+    return {
+        "ok": True,
+        "digit": digit,
+        **MENU[digit],
+        "audio_url": audio_url,
+        "audio_available": audio_url is not None,
+    }
+
 
 @app.post("/api/chat")
 def chat(body: ChatRequest):
@@ -149,11 +211,10 @@ def chat(body: ChatRequest):
         answer = result.choices[0].message.content
         if not answer:
             raise HTTPException(status_code=502, detail="The AI returned an empty response.")
-        return {"reply": answer, "model": MODEL}
+        return {"reply": answer, "model": MODEL, "audio_url": None}
     except HTTPException:
         raise
     except Exception as exc:
-        # Keep credentials and raw provider error details out of browser responses and logs.
         print(f"NVIDIA API request failed: {type(exc).__name__}")
         raise HTTPException(
             status_code=502,
