@@ -30,19 +30,34 @@ app.mount("/static", StaticFiles(directory=STATIC), name="static")
 MENU = {
     "1": {
         "title": "तक्रार निवारण",
-        "message": "तक्रार निवारणासाठी कृपया आपली तक्रार संबंधित कार्यालयाकडे अधिकृत पद्धतीने नोंदवा. या डेमोमध्ये तक्रार नोंदवली जात नाही.",
+        "message": "तक्रार नोंदवण्याबाबत मदत हवी आहे. खालीलपैकी पर्याय निवडा.",
+        "choices": {
+            "1": {"label": "तक्रार कशी तयार करावी", "message": "तुमची अडचण थोडक्यात आणि स्पष्ट लिहून ठेवा. संबंधित तारीख, कार्यालय/संस्थेचे नाव आणि आधी केलेला पत्रव्यवहार असल्यास त्याची माहिती तयार ठेवा. संवेदनशील वैयक्तिक माहिती इथे पाठवू नका. ही डेमो प्रणाली तक्रार प्रत्यक्ष नोंदवत नाही."},
+            "2": {"label": "तक्रारीची स्थिती", "message": "या डेमोला कार्यालयाच्या तक्रार नोंदणी प्रणालीशी जोडलेले नाही, त्यामुळे तक्रारीची स्थिती तपासता येत नाही. अधिकृत स्थितीसाठी संबंधित कार्यालयाशी संपर्क साधा."},
+        },
     },
     "2": {
         "title": "शाळाविषयक माहिती",
-        "message": "शाळाविषयक अचूक माहितीसाठी संबंधित शिक्षण विभागाशी संपर्क साधा. अधिकृत माहिती उपलब्ध नसल्यास आम्ही अंदाज देणार नाही.",
+        "message": "शाळांबाबत कोणती माहिती हवी आहे?",
+        "choices": {
+            "1": {"label": "प्रवेशाबाबत", "message": "प्रवेशाची पात्रता, कागदपत्रे आणि तारखा शाळा व लागू सरकारी नियमांनुसार बदलू शकतात. संबंधित शाळा किंवा शिक्षण विभागाकडून अद्ययावत अधिकृत माहिती घ्या."},
+            "2": {"label": "सुविधा व सहाय्य", "message": "शाळेत उपलब्ध प्रवेशयोग्यता सुविधा आणि विद्यार्थ्यांसाठी सहाय्य यांची माहिती थेट संबंधित शाळेकडून लेखी स्वरूपात मागा. या डेमोमध्ये कोणत्याही विशिष्ट शाळेच्या सुविधांची पडताळणी केलेली नाही."},
+            "3": {"label": "शाळेविषयी तक्रार", "message": "अडचणीचे संक्षिप्त वर्णन, संबंधित शाळेचे नाव आणि घटना घडल्याची तारीख तयार ठेवा. अधिकृत तक्रार कुठे नोंदवायची हे शिक्षण विभागाकडून तपासा. हा डेमो तक्रार दाखल करत नाही."},
+        },
     },
     "3": {
         "title": "शिष्यवृत्ती",
-        "message": "शिष्यवृत्तीच्या पात्रता आणि अर्जाच्या माहितीसाठी संबंधित शासकीय विभागाची अधिकृत सूचना तपासा.",
+        "message": "शिष्यवृत्तीबाबत कोणती मदत हवी आहे?",
+        "choices": {
+            "1": {"label": "पात्रता", "message": "शिष्यवृत्तीची पात्रता योजनेनुसार बदलते. अधिकृत योजनेचे नाव आणि चालू वर्षाची शासन सूचना तपासल्याशिवाय पात्रता निश्चित सांगता येणार नाही."},
+            "2": {"label": "अर्ज प्रक्रिया", "message": "अर्ज करण्यापूर्वी योजनेची अधिकृत सूचना, अर्जाची पद्धत, आवश्यक कागदपत्रे आणि अंतिम तारीख तपासा. या डेमोमध्ये कोणतीही अर्ज सेवा जोडलेली नाही."},
+            "3": {"label": "अर्जाची स्थिती", "message": "या डेमोला शासकीय शिष्यवृत्ती पोर्टलशी जोडलेले नाही, त्यामुळे अर्जाची स्थिती तपासता येत नाही. अधिकृत पोर्टल किंवा संबंधित विभागाकडे चौकशी करा."},
+        },
     },
     "4": {
         "title": "प्रतिनिधी",
-        "message": "हा ब्राउझर डेमो आहे. प्रत्यक्ष फोन कॉल किंवा प्रतिनिधीकडे हस्तांतरण होत नाही.",
+        "message": "प्रतिनिधीशी बोलण्याची विनंती नोंदवण्याचा पर्याय या डेमोमध्ये उपलब्ध नाही. प्रत्यक्ष फोन हस्तांतरण होत नाही. कार्यालयाचा अधिकृत संपर्क क्रमांक जोडलेला नसल्यामुळे तो येथे दाखवलेला नाही.",
+        "choices": {},
     },
 }
 
@@ -60,7 +75,7 @@ AUDIO_FILES = {
 }
 DIGIT_AUDIO = {"2": "option_2", "3": "option_3", "4": "option_4"}
 
-SYSTEM_PROMPT = """You are PhoenAI, a polite Marathi-first information assistant prototype for an office serving persons with disabilities in Maharashtra.
+BASE_SYSTEM_PROMPT = """You are PhoenAI, a polite Marathi-first information assistant prototype for an office serving persons with disabilities in Maharashtra.
 Reply in clear, simple Marathi by default. If the user writes in English, you may reply in English.
 Be respectful, concise, and accessible.
 Only state office procedures, addresses, phone numbers, deadlines, eligibility rules, or government benefits when those facts are explicitly provided in the conversation. Never invent official information, promise an application outcome, claim to have filed a complaint, or claim to transfer a phone call.
@@ -68,9 +83,27 @@ If you do not know an official fact, say that you do not have verified informati
 Do not ask callers to share Aadhaar numbers, passwords, OTPs, bank details, medical records, or other sensitive personal information.
 This is a prototype, not an official government service. Do not claim otherwise."""
 
+PROMPT_FILE = ROOT / "sysprompt.txt"
+
+
+def load_system_prompt() -> str:
+    """Load editable operator instructions while retaining mandatory safety rules."""
+    custom = ""
+    try:
+        custom = PROMPT_FILE.read_text(encoding="utf-8").strip()
+    except FileNotFoundError:
+        pass
+    if not custom:
+        return BASE_SYSTEM_PROMPT
+    return BASE_SYSTEM_PROMPT + "\\n\\nAdditional operator instructions (editable sysprompt.txt):\\n" + custom
+
+
+SYSTEM_PROMPT = load_system_prompt()
+
 
 class DigitRequest(BaseModel):
     digit: str = Field(min_length=1, max_length=2)
+    sub_option: str | None = Field(default=None, max_length=2)
 
 
 class ChatMessage(BaseModel):
@@ -166,7 +199,25 @@ def select_digit(body: DigitRequest):
         return {
             "ok": False,
             "message": "कृपया १ ते ४ पैकी एक पर्याय निवडा.",
+            "choices": [],
             "audio_url": "/api/audio/invalid" if (ROOT / AUDIO_FILES["invalid"]).is_file() else None,
+        }
+
+    selected = MENU[digit]
+    if body.sub_option is not None:
+        sub_option = body.sub_option.strip()
+        choice = selected["choices"].get(sub_option)
+        if choice is None:
+            return {"ok": False, "message": "कृपया दिलेल्या पर्यायांपैकी एक निवडा.", "choices": [], "audio_url": None}
+        return {
+            "ok": True,
+            "digit": digit,
+            "sub_option": sub_option,
+            "title": choice["label"],
+            "message": choice["message"],
+            "choices": [],
+            "audio_url": None,
+            "audio_available": False,
         }
 
     audio_event = DIGIT_AUDIO.get(digit)
@@ -174,7 +225,9 @@ def select_digit(body: DigitRequest):
     return {
         "ok": True,
         "digit": digit,
-        **MENU[digit],
+        "title": selected["title"],
+        "message": selected["message"],
+        "choices": [{"digit": key, **value} for key, value in selected["choices"].items()],
         "audio_url": audio_url,
         "audio_available": audio_url is not None,
     }
@@ -188,7 +241,7 @@ def chat(body: ChatRequest):
             detail="NVIDIA_API_KEY is not configured on the server.",
         )
 
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    messages = [{"role": "system", "content": load_system_prompt()}]
     for item in body.history[-8:]:
         messages.append({"role": item.role, "content": item.content})
     messages.append({"role": "user", "content": body.message})
