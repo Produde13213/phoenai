@@ -1,50 +1,84 @@
-# PhoenAI — Marathi IVR Prototype
+# PhoenAI — Marathi Information Assistant
 
-A small FastAPI + browser prototype for a Marathi-language IVR menu. It uses the repository's `ttsfree-marathi-take2.wav` file as the welcome recording.
+PhoenAI is a Marathi-first browser prototype with an IVR-style menu and an NVIDIA-powered chat assistant.
 
-## Important
+## AI model
 
-This is a **browser demo only**. It does not connect to a telephone number, BSNL line, PBX/EPABX, SIP trunk, or live callers. Option 4 does not transfer a call; it explains that transfer is not configured. Do not connect it to a real office phone system without the office's authorization and a properly reviewed telephony integration.
+Default model: `nvidia/nemotron-3.5-super-vl-120b-a12b`
+
+This is NVIDIA's Nemotron 3.5 Super VL model (120B total parameters, 12B active), listed with a free NVIDIA-hosted API endpoint. The model can accept text and image inputs; this prototype currently sends text chat only.
+
+You can override the model with the `NVIDIA_MODEL` environment variable.
+
+## Configure your API key
+
+Set the environment variable named exactly:
+
+```text
+NVIDIA_API_KEY
+```
+
+The application reads `NVIDIA_API_KEY` from the server environment. On Windows, environment-variable names are case-insensitive; on Linux they are case-sensitive. Never paste your key into source code, HTML, GitHub, screenshots, or chat messages.
+
+PowerShell (current terminal only):
+
+```powershell
+$env:NVIDIA_API_KEY = "YOUR_NVIDIA_API_KEY"
+```
+
+Persistent Windows user variable (run once, then open a new terminal):
+
+```powershell
+[Environment]::SetEnvironmentVariable("NVIDIA_API_KEY", "YOUR_NVIDIA_API_KEY", "User")
+```
+
+If your key is already configured as `nvidia_api_key` on Windows, Windows treats that as the same environment-variable name. The app uses the canonical uppercase spelling.
 
 ## Run on Windows
 
-1. Install Python 3.10 or newer.
-2. Open PowerShell in this repository.
-3. Create and activate a virtual environment:
-
 ```powershell
 py -m venv .venv
-.\.venv\Scripts\Activate.ps1
-```
-
-If PowerShell blocks activation, run the app using the venv executable directly instead.
-
-4. Install dependencies and start the server:
-
-```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000
+.\.venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-5. Open http://127.0.0.1:8000 in your browser.
+Open http://127.0.0.1:8000.
 
-## API
+If PowerShell blocks script activation, these commands do not require activation.
 
-- `GET /health` — service status
-- `GET /api/greeting` — Marathi welcome text and audio availability
-- `GET /api/greeting/audio` — welcome WAV recording
-- `GET /api/menu` — menu options
-- `POST /api/ivr/digit` — choose an option, JSON body such as `{"digit":"1"}`
+## API routes
 
-## Project layout
+- `GET /` — browser interface
+- `GET /health` — health and configuration status (never returns the API key)
+- `GET /api/config` — model name and whether a key is configured
+- `GET /api/greeting` — Marathi welcome text
+- `GET /api/greeting/audio` — repository WAV welcome recording
+- `GET /api/menu` — IVR menu
+- `POST /api/ivr/digit` — demo menu selection, for example `{"digit":"1"}`
+- `POST /api/chat` — NVIDIA-powered assistant response
+
+Example chat body:
+
+```json
+{"message":"नमस्कार, तुम्ही काय मदत करू शकता?","history":[]}
+```
+
+## Safety and telephony status
+
+This is a browser demo only. It does not connect to BSNL, a landline, SIP, PBX/EPABX, or live callers. Menu option 4 does not transfer a call. Do not connect it to an office phone system without the office's authorization and a reviewed telephony integration.
+
+The assistant is instructed not to invent official office procedures, benefit eligibility, addresses, phone numbers, or deadlines. Verify official information with the relevant office. Do not submit Aadhaar numbers, OTPs, passwords, bank details, or sensitive personal information.
+
+## Files
 
 ```text
 .
 ├── main.py
 ├── requirements.txt
+├── .env.example
+├── .gitignore
+├── README.md
 ├── ttsfree-marathi-take2.wav
 └── static/
     └── index.html
 ```
-
-The browser uses the speech synthesis voices available on the user's device for spoken menu responses. Marathi voice availability depends on the browser and operating system.
