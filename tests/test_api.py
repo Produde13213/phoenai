@@ -29,6 +29,8 @@ def test_ivr_digit_returns_selected_option_and_audio_mapping():
     assert data["ok"] is True
     assert data["digit"] == "3"
     assert data["audio_url"] == "/api/audio/option_3"
+    assert len(data["choices"]) == 3
+    assert data["choices"][0]["digit"] == "1"
 
 
 def test_option_one_does_not_fake_or_substitute_a_recording():
@@ -36,6 +38,7 @@ def test_option_one_does_not_fake_or_substitute_a_recording():
     assert response.status_code == 200
     assert response.json()["audio_url"] is None
     assert response.json()["audio_available"] is False
+    assert len(response.json()["choices"]) == 2
 
 
 def test_invalid_ivr_digit_is_rejected_with_recording():
@@ -53,7 +56,7 @@ def test_audio_catalog_lists_only_prerecorded_assets():
     assert data["option_2"]["available"] is True
     assert data["option_3"]["available"] is True
     assert data["option_4"]["available"] is True
-    assert data["option_1"] if "option_1" in data else True
+    assert "option_1" not in data
 
 
 def test_audio_endpoint_serves_wav():
@@ -72,3 +75,26 @@ def test_chat_requires_nvidia_api_key(monkeypatch):
     response = client.post("/api/chat", json={"message": "नमस्कार"})
     assert response.status_code == 503
     assert "NVIDIA_API_KEY" in response.json()["detail"]
+
+
+
+def test_ivr_sub_option_returns_guidance_without_audio():
+    response = client.post("/api/ivr/digit", json={"digit": "3", "sub_option": "1"})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["ok"] is True
+    assert data["title"] == "पात्रता"
+    assert "योजनेनुसार" in data["message"]
+    assert data["audio_url"] is None
+
+
+def test_invalid_sub_option_is_rejected():
+    response = client.post("/api/ivr/digit", json={"digit": "2", "sub_option": "9"})
+    assert response.status_code == 200
+    assert response.json()["ok"] is False
+
+
+def test_editable_system_prompt_file_is_loaded():
+    prompt = main.load_system_prompt()
+    assert "prototype" in prompt.lower()
+    assert "Custom instructions" in prompt or "operator instructions" in prompt
