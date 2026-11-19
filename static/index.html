@@ -118,6 +118,9 @@ async function chooseIvrOption(digit, subOption = null) {
     const data = await response.json();
     $("ivrReply").textContent = (data.title ? data.title + " — " : "") + (data.message || "Invalid option.");
     if (data.audio_url) await playRecording(data.audio_url);
+    else if (digit === "1" && !subOption) {
+      $("ivrReply").textContent += " (Button 1 recording has not been uploaded yet.)";
+    }
     if (data.choices && data.choices.length) {
       data.choices.forEach(choice => {
         const button = document.createElement("button");
