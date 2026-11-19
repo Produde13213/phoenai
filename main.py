@@ -23,7 +23,7 @@ API_KEY = os.getenv("NVIDIA_API_KEY", "").strip()
 app = FastAPI(
     title="PhoenAI",
     description="Marathi-language information assistant prototype",
-    version="0.3.0",
+    version="0.4.0",
 )
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
 
@@ -192,9 +192,48 @@ def menu():
     return MENU
 
 
+
+@app.get("/api/demo-check")
+def demo_check():
+    """Report demo readiness without exposing credentials or personal data."""
+    recordings = {
+        event: (ROOT / filename).is_file()
+        for event, filename in AUDIO_FILES.items()
+    }
+    required_events = ("greeting", "option_2", "option_3", "option_4", "invalid", "idle", "main_menu", "goodbye")
+    return {
+        "service": "PhoenAI",
+        "ready_for_browser_demo": all(recordings[event] for event in required_events),
+        "ai_configured": bool(API_KEY),
+        "recordings": recordings,
+        "missing_recordings": [event for event, available in recordings.items() if not available],
+        "option_1_recording_required": False,
+        "telephony_connected": False,
+        "synthetic_speech_enabled": False,
+    }
+
+
 @app.post("/api/ivr/digit")
 def select_digit(body: DigitRequest):
     digit = body.digit.strip()
+
+    # 0 always returns to the welcome/main menu.
+    if digit == "0" and body.sub_option is None:
+        available = (ROOT / AUDIO_FILES["main_menu"]).is_file()
+        return {
+            "ok": True,
+            "digit": "0",
+            "title": "मुख्य मेनू",
+            "message": (
+                "नमस्कार! दिव्यांग कल्याण आयुक्तालयामध्ये आपले स्वागत आहे. "
+                "तक्रार निवारणासाठी एक दाबा. शाळाविषयक माहितीसाठी दोन दाबा. "
+                "शिष्यवृत्तीसाठी तीन दाबा. प्रतिनिधीशी बोलण्यासाठी चार दाबा."
+            ),
+            "choices": [{"digit": key, "label": value["title"]} for key, value in MENU.items()],
+            "audio_url": "/api/audio/main_menu" if available else None,
+            "audio_available": available,
+        }
+
     if digit not in MENU:
         return {
             "ok": False,
