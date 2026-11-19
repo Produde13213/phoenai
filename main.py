@@ -1,5 +1,8 @@
+import json
 import os
 from pathlib import Path
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 from typing import Literal
 
 from dotenv import load_dotenv
@@ -19,20 +22,21 @@ NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
 DEFAULT_MODEL = "nvidia/nemotron-3.5-super-vl-120b-a12b"
 MODEL = os.getenv("NVIDIA_MODEL", DEFAULT_MODEL)
 API_KEY = os.getenv("NVIDIA_API_KEY", "").strip()
+DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "").strip()
 
 app = FastAPI(
     title="PhoenAI",
     description="Marathi-language information assistant prototype",
-    version="0.4.0",
+    version="0.5.0",
 )
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
 
 MENU = {
     "1": {
         "title": "तक्रार निवारण",
-        "message": "तक्रार नोंदवण्याबाबत मदत हवी आहे. खालीलपैकी पर्याय निवडा.",
+        "message": "तक्रार पाठवण्यासाठी पहिला पर्याय निवडा. डेमोमध्ये कृपया वैयक्तिक किंवा संवेदनशील माहिती लिहू नका.",
         "choices": {
-            "1": {"label": "तक्रार कशी तयार करावी", "message": "तुमची अडचण थोडक्यात आणि स्पष्ट लिहून ठेवा. संबंधित तारीख, कार्यालय/संस्थेचे नाव आणि आधी केलेला पत्रव्यवहार असल्यास त्याची माहिती तयार ठेवा. संवेदनशील वैयक्तिक माहिती इथे पाठवू नका. ही डेमो प्रणाली तक्रार प्रत्यक्ष नोंदवत नाही."},
+            "1": {"label": "नवीन तक्रार पाठवा", "message": "खालील फॉर्ममध्ये तक्रारीचा प्रकार आणि थोडक्यात वर्णन भरा. कृपया नाव, फोन, पत्ता, Aadhaar, वैद्यकीय किंवा इतर वैयक्तिक माहिती लिहू नका."},
             "2": {"label": "तक्रारीची स्थिती", "message": "या डेमोला कार्यालयाच्या तक्रार नोंदणी प्रणालीशी जोडलेले नाही, त्यामुळे तक्रारीची स्थिती तपासता येत नाही. अधिकृत स्थितीसाठी संबंधित कार्यालयाशी संपर्क साधा."},
         },
     },
@@ -104,6 +108,12 @@ SYSTEM_PROMPT = load_system_prompt()
 class DigitRequest(BaseModel):
     digit: str = Field(min_length=1, max_length=2)
     sub_option: str | None = Field(default=None, max_length=2)
+
+
+class ComplaintRequest(BaseModel):
+    category: str = Field(min_length=2, max_length=80)
+    description: str = Field(min_length=10, max_length=1500)
+    privacy_confirmed: bool
 
 
 class ChatMessage(BaseModel):
@@ -205,6 +215,7 @@ def demo_check():
         "service": "PhoenAI",
         "ready_for_browser_demo": all(recordings[event] for event in required_events),
         "ai_configured": bool(API_KEY),
+        "complaint_webhook_configured": bool(DISCORD_WEBHOOK_URL),
         "recordings": recordings,
         "missing_recordings": [event for event, available in recordings.items() if not available],
         "option_1_recording_required": False,
@@ -269,6 +280,52 @@ def select_digit(body: DigitRequest):
         "choices": [{"digit": key, **value} for key, value in selected["choices"].items()],
         "audio_url": audio_url,
         "audio_available": audio_url is not None,
+    }
+
+
+@app.post("/api/complaints")
+def submit_complaint(body: ComplaintRequest):
+    """Send a minimal demo complaint to the operator-configured Discord webhook."""
+    if not DISCORD_WEBHOOK_URL:
+        raise HTTPException(status_code=503, detail="Complaint inbox is not configured on this server.")
+    if not body.privacy_confirmed:
+        raise HTTPException(status_code=400, detail="Please confirm that you have not included personal or sensitive information.")
+
+    # Only the category and user-written description are sent. Never attach identity/contact data.
+    payload = {
+        "content": "New PhoenAI demo complaint",
+        "embeds": [{
+            "title": "Demo complaint received",
+            "color": 5793266,
+            "fields": [
+                {"name": "Category", "value": body.category.strip()[:80], "inline": True},
+                {"name": "Description", "value": body.description.strip()[:1500], "inline": False},
+            ],
+            "footer": {"text": "PhoenAI browser prototype — not an official complaint registration"},
+        }],
+        "allowed_mentions": {"parse": []},
+    }
+    request = Request(
+        DISCORD_WEBHOOK_URL,
+        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        headers={"Content-Type": "application/json", "User-Agent": "PhoenAI-Demo/0.5"},
+        method="POST",
+    )
+    try:
+        with urlopen(request, timeout=8) as response:
+            if response.status not in (200, 204):
+                raise HTTPException(status_code=502, detail="The complaint inbox did not accept the demo submission.")
+    except HTTPError as exc:
+        print(f"Discord webhook rejected complaint: HTTP {exc.code}")
+        raise HTTPException(status_code=502, detail="The complaint inbox rejected the demo submission.") from exc
+    except (URLError, TimeoutError, OSError) as exc:
+        print(f"Discord webhook request failed: {type(exc).__name__}")
+        raise HTTPException(status_code=502, detail="Could not reach the complaint inbox. Please try again.") from exc
+
+    return {
+        "ok": True,
+        "message": "तुमची डेमो तक्रार प्राप्त झाली आहे. धन्यवाद!",
+        "return_to_main_menu": True,
     }
 
 
