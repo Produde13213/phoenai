@@ -29,9 +29,9 @@
     .readiness{font-size:11px;color:#91a6c5;line-height:1.6;margin-top:10px}
     @media(max-width:760px){body{padding:14px}.columns{grid-template-columns:1fr}.hero{padding:24px}.chatbox{min-height:380px}.top{align-items:flex-start;flex-direction:column}}
     @media(max-width:390px){.menu{grid-template-columns:1fr}.composer{flex-direction:column}.send{padding:12px}}
-  </style>
+  .language-gate{position:fixed;inset:0;z-index:10;background:#080d19f5;display:grid;place-items:center;padding:20px}.language-card{width:min(520px,100%);padding:28px;border:1px solid #344b6c;border-radius:22px;background:#14223a;box-shadow:0 24px 80px #0009}.language-card h1{font-size:30px}.language-actions{display:flex;gap:12px;margin-top:18px}.language-actions button{flex:1;text-align:center;font-weight:800}.language-actions button:disabled{opacity:.4}.language-status{min-height:44px;color:#b9cbe5;font-size:13px;line-height:1.6;margin-top:12px}\n  </style>
 </head>
-<body>
+<body>\n<div class="language-gate" id="languageGate"><section class="language-card"><div class="eyebrow">PHOENAI · LANGUAGE SETUP</div><h1>Select your language</h1><p class="sub">The English prompt plays first, followed by the Hindi prompt. Then choose 1 for Marathi or 2 for English.</p><audio id="languagePlayer" controls></audio><div class="language-actions"><button id="startLanguage">Start language prompts</button></div><div class="language-actions"><button id="chooseMarathi" disabled>1 · मराठी</button><button id="chooseEnglish" disabled>2 · English</button></div><p class="language-status" id="languageStatus" role="status" aria-live="polite">Press Start to hear both recorded prompts in sequence.</p></section></div>
 <div class="shell">
   <header class="top"><div class="brand"><div class="logo">P</div><div><strong>PhoenAI</strong><small>Marathi information assistant</small></div></div><div class="pill" id="status">Checking AI connection…</div></header>
   <section class="hero"><div class="eyebrow">Voice automation prototype</div><h1>नमस्कार! स्वागत आहे.</h1><p class="sub">मराठीमध्ये माहिती मिळवा किंवा IVR मेनूचा नमुना वापरून पाहा.</p><div class="meta"><span class="chip" id="modelChip">NVIDIA model</span><span class="chip">Browser prototype</span><span class="chip">Recorded audio only</span></div></section>
@@ -76,7 +76,7 @@
 const $ = (id) => document.getElementById(id);
 const messages = [];
 let activeAudioUrl = null;
-let idleDemoCount = 0;
+let idleDemoCount = 0;\nlet activeLanguage = "mr";\nlet languagePromptsFinished = false;
 
 function addBubble(text, role) {
   const node = document.createElement("div");
@@ -103,7 +103,73 @@ async function playRecording(url) {
   }
 }
 
-fetch("/api/config").then(r => r.json()).then(c => {
+
+const languagePlayer = $("languagePlayer");
+function finishLanguagePrompts() {
+  languagePromptsFinished = true;
+  $("chooseMarathi").disabled = false;
+  $("chooseEnglish").disabled = false;
+  $("languageStatus").textContent = "Prompts finished. Press 1 for Marathi or 2 for English.";
+}
+async function startLanguagePrompts() {
+  $("startLanguage").disabled = true;
+  $("languageStatus").textContent = "Playing the English language prompt…";
+  const sequence = ["/api/audio/language_english", "/api/audio/language_hindi"];
+  for (let i = 0; i < sequence.length; i++) {
+    languagePlayer.src = sequence[i];
+    try {
+      await languagePlayer.play();
+      await new Promise(resolve => {
+        languagePlayer.onended = resolve;
+        languagePlayer.onerror = resolve;
+      });
+    } catch {
+      $("languageStatus").textContent = "Autoplay was blocked. Press Play on the audio player, then press Continue after it finishes.";
+      $("startLanguage").disabled = false;
+      $("startLanguage").textContent = "Continue prompts";
+      return;
+    }
+    if (i === 0) $("languageStatus").textContent = "English prompt finished. Playing the Hindi prompt…";
+  }
+  finishLanguagePrompts();
+}
+$("startLanguage").addEventListener("click", startLanguagePrompts);
+function activateLanguage(language) {
+  if (!languagePromptsFinished) return;
+  activeLanguage = language;
+  document.documentElement.lang = language === "mr" ? "mr" : "en";
+  $("languageGate").remove();
+  if (language === "en") {
+    document.title = "PhoenAI — English Information Assistant";
+    document.querySelector(".brand small").textContent = "English information assistant";
+    document.querySelector(".hero h1").textContent = "Welcome to PhoenAI";
+    document.querySelector(".hero .sub").textContent = "Get information in English or try the IVR menu demo.";
+    $("greeting").textContent = "Welcome to the Office of the Commissioner for Persons with Disabilities.";
+    document.querySelectorAll(".panel h2")[0].textContent = "Welcome message";
+    document.querySelectorAll(".panel h2")[1].textContent = "Choose an IVR option";
+    document.querySelectorAll(".panel h2")[2].textContent = "Test keypad (0–9)";
+    document.querySelectorAll(".panel h2")[3].textContent = "Chat with PhoenAI";
+    document.querySelectorAll(".panel .muted")[0].textContent = "Use the buttons below to explore the menu.";
+    document.querySelector(".chatbox .muted").textContent = "Ask a question in English. Replies are text-only.";
+    $("messageInput").placeholder = "Type your question…";
+    $("sendButton").textContent = "Send";
+    $("messages").replaceChildren();
+    addBubble("Hello! I am PhoenAI. How can I help?", "bot");
+    document.querySelectorAll("[data-digit='1'] span")[0].textContent = "Complaint support";
+    document.querySelectorAll("[data-digit='2'] span")[0].textContent = "School information";
+    document.querySelectorAll("[data-digit='3'] span")[0].textContent = "Scholarships";
+    document.querySelectorAll("[data-digit='4'] span")[0].textContent = "Representative";
+    $("ivrReply").textContent = "Choose an option. This is a demo only.";
+    document.querySelectorAll(".audio-actions button")[0].textContent = "Play main menu";
+    $("idleDemoButton").textContent = "Simulate idle timeout";
+    document.querySelectorAll(".audio-actions button")[2].textContent = "Play invalid-input message";
+    document.querySelectorAll(".audio-actions button")[3].textContent = "Play goodbye";
+  }
+  chooseIvrOption("0");
+}
+$("chooseMarathi").addEventListener("click", () => activateLanguage("mr"));
+$("chooseEnglish").addEventListener("click", () => activateLanguage("en"));
+\nfetch("/api/config").then(r => r.json()).then(c => {
   $("status").textContent = c.ai_configured ? "Menu ready · AI connected" : "Menu ready · AI key missing";
   $("modelChip").textContent = c.model;
 }).catch(() => { $("status").textContent = "Server unavailable"; });
@@ -131,7 +197,7 @@ async function chooseIvrOption(digit, subOption = null) {
     const response = await fetch("/api/ivr/digit", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(subOption ? {digit, sub_option: subOption} : {digit})
+      body: JSON.stringify(subOption ? {digit, sub_option: subOption, language: activeLanguage} : {digit, language: activeLanguage})
     });
     const data = await response.json();
     $("ivrReply").textContent = (data.title ? data.title + " — " : "") + (data.message || "Invalid option.");
@@ -240,7 +306,7 @@ $("chatForm").addEventListener("submit", async event => {
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({message, history: messages.slice(-8)})
+      body: JSON.stringify({message, history: messages.slice(-8), language: activeLanguage})
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || "Request failed");
