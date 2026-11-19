@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="mr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b1020">
+  <title>PhoenAI — Marathi Voice Assistant</title>
+  <style>
+    :root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,"Noto Sans Devanagari",sans-serif}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 15% 0%,#1a3153 0,transparent 42%),#080d19;color:#eef4ff;padding:28px}
+    .shell{max-width:980px;margin:auto}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:24px}
+    .brand{display:flex;align-items:center;gap:12px}.logo{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#72aaff,#8a78ff);display:grid;place-items:center;font-weight:900;color:#07101f}
+    .brand strong{font-size:18px}.brand small{display:block;color:#91a6c5;margin-top:2px}.pill{font-size:12px;color:#f5d58a;background:#3a2d18;border:1px solid #65502c;border-radius:99px;padding:8px 12px}
+    .hero{padding:34px;border:1px solid #263754;border-radius:24px;background:linear-gradient(145deg,#14223a,#101a2d);box-shadow:0 24px 80px #0005}
+    .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#83b4ff;font-weight:800}h1{font-size:clamp(32px,6vw,54px);letter-spacing:-.04em;margin:12px 0 8px}.sub{color:#aebed6;line-height:1.7;margin:0}
+    .meta{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0}.chip{border:1px solid #314665;border-radius:99px;padding:7px 11px;color:#b9cbe5;font-size:12px}
+    .columns{display:grid;grid-template-columns:1fr 1.15fr;gap:16px;margin-top:18px}.panel{border:1px solid #263754;border-radius:20px;background:#101a2b;padding:22px;min-width:0}
+    h2{font-size:17px;margin:0 0 14px}.muted{color:#91a6c5;font-size:13px;line-height:1.6}audio{width:100%;margin:12px 0 8px}
+    .menu{display:grid;grid-template-columns:1fr 1fr;gap:10px}button{font:inherit;cursor:pointer;border:1px solid #344b6c;border-radius:13px;background:#192a43;color:#eef4ff;padding:13px;text-align:left;transition:.15s}
+    button:hover{border-color:#83b4ff;background:#203858}button:disabled{opacity:.55;cursor:wait}.menu button b{display:block;font-size:21px;color:#8bb8ff;margin-bottom:4px}.menu button span{font-size:13px}
+    .chatbox{display:flex;flex-direction:column;min-height:420px}.messages{flex:1;min-height:230px;max-height:390px;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:4px 2px 14px}
+    .bubble{max-width:90%;padding:12px 14px;border-radius:15px;line-height:1.65;white-space:pre-wrap;font-size:14px}.bot{background:#1a2c46;border:1px solid #304767;align-self:flex-start}.user{background:#31558b;align-self:flex-end}
+    .composer{display:flex;gap:8px;border-top:1px solid #273954;padding-top:14px}input{min-width:0;flex:1;border:1px solid #344b6c;background:#0b1424;color:white;border-radius:12px;padding:13px;font:inherit}
+    .send{background:#477ed0;border-color:#6398e6;padding:0 18px;font-weight:700}.notice{font-size:11px;color:#8195b3;line-height:1.6;margin-top:14px}
+    #ivrReply{margin-top:13px;padding:12px;border-radius:12px;background:#0b1424;color:#c9d8ee;min-height:48px;font-size:13px;line-height:1.6}
+    .audio-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.audio-actions button{font-size:12px;padding:9px 11px}
+    .ivr-choices{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.ivr-choices button{font-size:12px;padding:10px 12px}.ivr-choices .back{border-color:#52627b;color:#c2d1e5}.complaint-form{display:grid;gap:9px;width:100%;margin-top:10px;padding:13px;border:1px solid #344b6c;border-radius:13px;background:#0b1424}.complaint-form label{font-size:12px;color:#b9cbe5}.complaint-form select,.complaint-form textarea{width:100%;margin-top:5px;border:1px solid #344b6c;background:#101a2b;color:#eef4ff;border-radius:9px;padding:10px;font:inherit}.complaint-form textarea{min-height:100px;resize:vertical}.complaint-form button{background:#477ed0;text-align:center}.complaint-form .privacy{display:flex;gap:8px;align-items:flex-start}.complaint-form .privacy input{flex:0;width:auto;margin:2px 0 0}
+    .keypad{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-top:12px}.keypad button{text-align:center;padding:10px 6px;font-weight:800}.keypad button small{display:block;font-size:9px;font-weight:400;color:#9eb4d3;margin-top:2px}
+    .readiness{font-size:11px;color:#91a6c5;line-height:1.6;margin-top:10px}
+    @media(max-width:760px){body{padding:14px}.columns{grid-template-columns:1fr}.hero{padding:24px}.chatbox{min-height:380px}.top{align-items:flex-start;flex-direction:column}}
+    @media(max-width:390px){.menu{grid-template-columns:1fr}.composer{flex-direction:column}.send{padding:12px}}
+  </style>
+</head>
+<body>
+<div class="shell">
+  <header class="top"><div class="brand"><div class="logo">P</div><div><strong>PhoenAI</strong><small>Marathi information assistant</small></div></div><div class="pill" id="status">Checking AI connection…</div></header>
+  <section class="hero"><div class="eyebrow">Voice automation prototype</div><h1>नमस्कार! स्वागत आहे.</h1><p class="sub">मराठीमध्ये माहिती मिळवा किंवा IVR मेनूचा नमुना वापरून पाहा.</p><div class="meta"><span class="chip" id="modelChip">NVIDIA model</span><span class="chip">Browser prototype</span><span class="chip">Recorded audio only</span></div></section>
+  <div class="columns">
+    <section class="panel">
+      <h2>स्वागत संदेश</h2><p class="muted" id="greeting">नमस्कार! दिव्यांग कल्याण आयुक्तालयामध्ये आपले स्वागत आहे.</p>
+      <audio id="player" controls preload="none" hidden></audio>
+      <h2 style="margin-top:20px">IVR पर्याय निवडा</h2>
+      <div class="menu">
+        <button data-digit="1"><b>१</b><span>तक्रार निवारण</span></button>
+        <button data-digit="2"><b>२</b><span>शाळाविषयक माहिती</span></button>
+        <button data-digit="3"><b>३</b><span>शिष्यवृत्ती</span></button>
+        <button data-digit="4"><b>४</b><span>प्रतिनिधी</span></button>
+      </div>
+      <h2 style="margin-top:18px">Test keypad (0–9)</h2>
+      <p class="muted">0 returns to the main menu. 1–4 open the menu. 5–9 test invalid input.</p>
+      <div class="keypad" id="keypad">
+        <button data-keypad-digit="1">1</button><button data-keypad-digit="2">2</button><button data-keypad-digit="3">3</button><button data-keypad-digit="4">4</button><button data-keypad-digit="5">5</button>
+        <button data-keypad-digit="6">6</button><button data-keypad-digit="7">7</button><button data-keypad-digit="8">8</button><button data-keypad-digit="9">9</button><button data-keypad-digit="0">0<small>Main menu</small></button>
+      </div>
+      <div id="ivrReply" role="status" aria-live="polite">पर्याय निवडा. हा फक्त डेमो आहे.</div>
+      <div id="ivrChoices" class="ivr-choices" aria-label="More menu options"></div>
+      <div class="audio-actions">
+        <button data-audio="main_menu">Play main menu</button>
+        <button id="idleDemoButton" type="button">Simulate idle timeout</button>
+        <button data-audio="invalid">Play invalid-input message</button>
+        <button data-audio="goodbye">Play goodbye</button>
+      </div>
+      <p class="readiness" id="assetStatus">Checking prerecorded audio files…</p>
+      <p class="notice">Option 1 has no dedicated recording yet. Option 4 audio is a recording only; this demo does not transfer calls.</p>
+    </section>
+    <section class="panel chatbox">
+      <h2>PhoenAI शी बोला</h2><p class="muted">मराठी किंवा इंग्रजीमध्ये प्रश्न विचारा. उत्तरे मजकूर स्वरूपातच असतील.</p>
+      <div class="messages" id="messages" aria-live="polite"><div class="bubble bot">नमस्कार! मी PhoenAI आहे. मी कशी मदत करू?</div></div>
+      <form class="composer" id="chatForm"><input id="messageInput" maxlength="2000" autocomplete="off" placeholder="तुमचा प्रश्न लिहा…" required><button class="send" id="sendButton" type="submit">Send</button></form>
+      <div class="notice">AI कडून मिळालेली माहिती तपासून घ्या. अधिकृत नियम, पात्रता किंवा अंतिम तारखांबाबत खात्रीशीर माहिती नसल्यास AI अंदाज लावणार नाही.</div>
+    </section>
+  </div>
+  <p class="notice">महत्त्वाचे: हा प्रोटोटाइप कोणताही फोन कॉल करत नाही, स्वीकारत नाही किंवा ट्रान्सफर करत नाही. प्रत्यक्ष कार्यालयीन फोन प्रणालीशी जोडण्यापूर्वी कार्यालयाची परवानगी आणि अधिकृत तांत्रिक तपासणी आवश्यक आहे. कृपया Aadhaar, OTP, पासवर्ड किंवा बँक तपशील टाकू नका.</p>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const messages = [];
+let activeAudioUrl = null;
+let idleDemoCount = 0;
+
+function addBubble(text, role) {
+  const node = document.createElement("div");
+  node.className = "bubble " + role;
+  node.textContent = text;
+  $("messages").appendChild(node);
+  $("messages").scrollTop = $("messages").scrollHeight;
+}
+
+async function playRecording(url) {
+  if (!url) {
+    $("ivrReply").textContent += " (No recording is available for this option yet.)";
+    return;
+  }
+  const player = $("player");
+  player.pause();
+  player.src = url;
+  player.hidden = false;
+  activeAudioUrl = url;
+  try {
+    await player.play();
+  } catch {
+    $("ivrReply").textContent += " Press Play on the audio player to hear the recording.";
+  }
+}
+
+fetch("/api/config").then(r => r.json()).then(c => {
+  $("status").textContent = c.ai_configured ? "Menu ready · AI connected" : "Menu ready · AI key missing";
+  $("modelChip").textContent = c.model;
+}).catch(() => { $("status").textContent = "Server unavailable"; });
+
+fetch("/api/demo-check").then(r => r.json()).then(c => {
+  const available = Object.entries(c.recordings).filter(([,ok]) => ok).length;
+  const total = Object.keys(c.recordings).length;
+  const missing = c.missing_recordings.length ? " Missing: " + c.missing_recordings.join(", ") + "." : "";
+  $("assetStatus").textContent = "Prerecorded audio: " + available + "/" + total + " files available." + missing + (c.ai_configured ? " AI chat configured." : " Menu works without AI; configure NVIDIA_API_KEY for chat.");
+}).catch(() => { $("assetStatus").textContent = "Could not check audio files."; });
+
+fetch("/api/greeting").then(r => r.json()).then(data => {
+  $("greeting").textContent = data.text;
+  if (data.audio_url) {
+    $("player").src = data.audio_url;
+    $("player").hidden = false;
+  }
+}).catch(() => {});
+
+async function chooseIvrOption(digit, subOption = null) {
+  idleDemoCount = 0;
+  $("ivrReply").textContent = "माहिती मिळवत आहे…";
+  $("ivrChoices").replaceChildren();
+  try {
+    const response = await fetch("/api/ivr/digit", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(subOption ? {digit, sub_option: subOption} : {digit})
+    });
+    const data = await response.json();
+    $("ivrReply").textContent = (data.title ? data.title + " — " : "") + (data.message || "Invalid option.");
+    if (data.audio_url) await playRecording(data.audio_url);
+    else if (digit === "1" && !subOption) {
+      $("ivrReply").textContent += " (Button 1 recording has not been uploaded yet.)";
+    }
+    if (digit === "1" && subOption === "1" && data.ok) {
+      const form = document.createElement("form");
+      form.className = "complaint-form";
+      form.innerHTML = '<label>Complaint category<select name="category" required><option value="">Select a category</option><option>Accessibility</option><option>School / Education</option><option>Scholarship</option><option>Other</option></select></label><label>Complaint description<textarea name="description" minlength="10" maxlength="1500" required placeholder="Describe the issue briefly. Do not include names, phone numbers, addresses, Aadhaar, medical details, or other personal information."></textarea></label><label class="privacy"><input name="privacy_confirmed" type="checkbox" required><span>I confirm this demo complaint contains no personal or sensitive information.</span></label><button type="submit">Submit demo complaint</button><p class="muted">This sends the text to the configured Discord inbox. It is not an official government complaint registration.</p>';
+      form.addEventListener("submit", async event => {
+        event.preventDefault();
+        const submit = form.querySelector("button[type=submit]");
+        submit.disabled = true;
+        submit.textContent = "Sending…";
+        const formData = new FormData(form);
+        try {
+          const result = await fetch("/api/complaints", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+              category: formData.get("category"),
+              description: formData.get("description"),
+              privacy_confirmed: formData.get("privacy_confirmed") === "on"
+            })
+          });
+          const answer = await result.json();
+          if (!result.ok) throw new Error(answer.detail || "Submission failed");
+          $("ivrChoices").replaceChildren();
+          $("ivrReply").textContent = answer.message + " Returning to the main menu…";
+          setTimeout(() => chooseIvrOption("0"), 2200);
+        } catch (error) {
+          $("ivrReply").textContent = "Could not submit: " + error.message;
+          submit.disabled = false;
+          submit.textContent = "Try again";
+        }
+      });
+      $("ivrChoices").appendChild(form);
+    }
+    if (data.choices && data.choices.length) {
+      data.choices.forEach(choice => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = choice.digit + ". " + choice.label;
+        button.addEventListener("click", () => {
+          if (digit === "0") chooseIvrOption(choice.digit);
+          else chooseIvrOption(digit, choice.digit);
+        });
+        $("ivrChoices").appendChild(button);
+      });
+    }
+    if (digit !== "0" && !(digit === "1" && subOption === "1")) {
+      const back = document.createElement("button");
+      back.type = "button";
+      back.className = "back";
+      back.textContent = "Main menu";
+      back.addEventListener("click", () => {
+        idleDemoCount = 0;
+        chooseIvrOption("0");
+      });
+      $("ivrChoices").appendChild(back);
+    }
+  } catch {
+    $("ivrReply").textContent = "सर्व्हरशी संपर्क होऊ शकला नाही.";
+  }
+}
+
+document.querySelectorAll("[data-digit]").forEach(button => {
+  button.addEventListener("click", () => chooseIvrOption(button.dataset.digit));
+});
+document.querySelectorAll("[data-keypad-digit]").forEach(button => {
+  button.addEventListener("click", () => chooseIvrOption(button.dataset.keypadDigit));
+});
+
+document.querySelectorAll("[data-audio]").forEach(button => {
+  button.addEventListener("click", () => playRecording("/api/audio/" + button.dataset.audio));
+});
+
+$("idleDemoButton").addEventListener("click", async () => {
+  idleDemoCount += 1;
+  if (idleDemoCount === 1) {
+    $("ivrReply").textContent = "First idle timeout: playing the reminder recording. Click again to simulate a second timeout.";
+    await playRecording("/api/audio/idle");
+    return;
+  }
+  idleDemoCount = 0;
+  $("ivrReply").textContent = "Second idle timeout: playing the goodbye recording. The main menu returns when playback finishes.";
+  await playRecording("/api/audio/goodbye");
+  $("ivrChoices").replaceChildren();
+  $("player").onended = () => {
+    $("player").onended = null;
+    chooseIvrOption("0");
+  };
+});
+
+$("chatForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  const message = $("messageInput").value.trim();
+  if (!message) return;
+  addBubble(message, "user");
+  $("messageInput").value = "";
+  $("sendButton").disabled = true;
+  $("sendButton").textContent = "…";
+  try {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({message, history: messages.slice(-8)})
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Request failed");
+    addBubble(data.reply, "bot");
+    messages.push({role: "user", content: message}, {role: "assistant", content: data.reply});
+    // Deliberately text-only: no SpeechSynthesis, browser TTS, or generated voice.
+  } catch (error) {
+    addBubble("क्षमस्व: " + error.message, "bot");
+  } finally {
+    $("sendButton").disabled = false;
+    $("sendButton").textContent = "Send";
+  }
+});
+</script>
+</body>
+</html>
