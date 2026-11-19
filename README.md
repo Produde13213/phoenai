@@ -56,7 +56,7 @@ Audio is served only from WAV files committed in the repository:
 
 The existing filenames are preserved exactly. The misspellings in two filenames are retained so the app can serve the files already committed; they can be renamed later if desired.
 
-The browser demo provides controls to play the idle, invalid-input, main-menu, and goodbye recordings. Selecting buttons 2–4 plays their matching recording. Button 1 displays its text response and clearly reports that its recording is missing. The welcome recording is available in the audio player.
+The browser demo provides controls to simulate two idle timeouts (idle reminder, goodbye, then main-menu return), and to preview invalid-input, main-menu, and goodbye recordings. Selecting buttons 2–4 plays their matching recording. Button 1 displays its text response and clearly reports that its recording is missing. The welcome recording is available in the audio player.
 
 ## API routes
 
@@ -99,6 +99,6 @@ Do not put API keys, passwords, OTPs, or personal data in this file.
 
 On Windows, double-click `start_demo.bat`. It creates a virtual environment if needed, installs the Python requirements, starts the local web server, and opens the browser demo at http://127.0.0.1:8000. Keep the terminal window open while presenting.
 
-The demo uses a numeric keypad: 0 returns to the main menu, 1–4 select the four services, and 5–9 demonstrate invalid input. The interface checks the prerecorded audio files and reports whether NVIDIA chat is configured. The menu and audio playback work without an NVIDIA API key; AI chat requires one.
+The demo uses a numeric keypad: 0 returns to the main menu, 1–4 select the four services, and 5–9 demonstrate invalid input. The idle simulator plays the first idle reminder; on the second click it plays goodbye and returns to the main menu when playback finishes. The interface checks the prerecorded audio files and reports whether NVIDIA chat is configured. The menu and audio playback work without an NVIDIA API key; AI chat requires one.
 
 See [DEMO_CHECKLIST.md](DEMO_CHECKLIST.md) for the presentation sequence, setup checks, and limitations.
