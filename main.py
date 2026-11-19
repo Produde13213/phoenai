@@ -95,7 +95,7 @@ def load_system_prompt() -> str:
         pass
     if not custom:
         return BASE_SYSTEM_PROMPT
-    return BASE_SYSTEM_PROMPT + "\\n\\nAdditional operator instructions (editable sysprompt.txt):\\n" + custom
+    return BASE_SYSTEM_PROMPT + "\n\nAdditional operator instructions (editable sysprompt.txt):\n" + custom
 
 
 SYSTEM_PROMPT = load_system_prompt()
