@@ -24,6 +24,7 @@
     .send{background:#477ed0;border-color:#6398e6;padding:0 18px;font-weight:700}.notice{font-size:11px;color:#8195b3;line-height:1.6;margin-top:14px}
     #ivrReply{margin-top:13px;padding:12px;border-radius:12px;background:#0b1424;color:#c9d8ee;min-height:48px;font-size:13px;line-height:1.6}
     .audio-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.audio-actions button{font-size:12px;padding:9px 11px}
+    .ivr-choices{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.ivr-choices button{font-size:12px;padding:10px 12px}.ivr-choices .back{border-color:#52627b;color:#c2d1e5}
     @media(max-width:760px){body{padding:14px}.columns{grid-template-columns:1fr}.hero{padding:24px}.chatbox{min-height:380px}.top{align-items:flex-start;flex-direction:column}}
     @media(max-width:390px){.menu{grid-template-columns:1fr}.composer{flex-direction:column}.send{padding:12px}}
   </style>
@@ -44,6 +45,7 @@
         <button data-digit="4"><b>४</b><span>प्रतिनिधी</span></button>
       </div>
       <div id="ivrReply" role="status" aria-live="polite">पर्याय निवडा. हा फक्त डेमो आहे.</div>
+      <div id="ivrChoices" class="ivr-choices" aria-label="More menu options"></div>
       <div class="audio-actions">
         <button data-audio="main_menu">Play main menu</button>
         <button data-audio="idle">Play idle message</button>
@@ -104,25 +106,45 @@ fetch("/api/greeting").then(r => r.json()).then(data => {
   }
 }).catch(() => {});
 
-document.querySelectorAll("[data-digit]").forEach(button => {
-  button.addEventListener("click", async () => {
-    $("ivrReply").textContent = "माहिती मिळवत आहे…";
-    try {
-      const response = await fetch("/api/ivr/digit", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({digit: button.dataset.digit})
+async function chooseIvrOption(digit, subOption = null) {
+  $("ivrReply").textContent = "माहिती मिळवत आहे…";
+  $("ivrChoices").replaceChildren();
+  try {
+    const response = await fetch("/api/ivr/digit", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(subOption ? {digit, sub_option: subOption} : {digit})
+    });
+    const data = await response.json();
+    $("ivrReply").textContent = (data.title ? data.title + " — " : "") + (data.message || "Invalid option.");
+    if (data.audio_url) await playRecording(data.audio_url);
+    if (data.choices && data.choices.length) {
+      data.choices.forEach(choice => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = choice.digit + ". " + choice.label;
+        button.addEventListener("click", () => chooseIvrOption(digit, choice.digit));
+        $("ivrChoices").appendChild(button);
       });
-      const data = await response.json();
-      $("ivrReply").textContent = data.message || "Invalid option.";
-      if (data.audio_url) await playRecording(data.audio_url);
-      else if (button.dataset.digit === "1") {
-        $("ivrReply").textContent += " (Button 1 recording has not been uploaded yet.)";
-      }
-    } catch {
-      $("ivrReply").textContent = "सर्व्हरशी संपर्क होऊ शकला नाही.";
     }
-  });
+    if (digit !== "0") {
+      const back = document.createElement("button");
+      back.type = "button";
+      back.className = "back";
+      back.textContent = "Main menu";
+      back.addEventListener("click", () => {
+        $("ivrReply").textContent = "पर्याय निवडा. हा फक्त डेमो आहे.";
+        $("ivrChoices").replaceChildren();
+      });
+      $("ivrChoices").appendChild(back);
+    }
+  } catch {
+    $("ivrReply").textContent = "सर्व्हरशी संपर्क होऊ शकला नाही.";
+  }
+}
+
+document.querySelectorAll("[data-digit]").forEach(button => {
+  button.addEventListener("click", () => chooseIvrOption(button.dataset.digit));
 });
 
 document.querySelectorAll("[data-audio]").forEach(button => {
