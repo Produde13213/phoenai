@@ -255,6 +255,8 @@ def demo_check():
 @app.post("/api/ivr/digit")
 def select_digit(body: DigitRequest):
     digit = body.digit.strip()
+    active_menu = EN_MENU if body.language == "en" else MENU
+    audio_prefix = "english_" if body.language == "en" else ""
 
     # 0 always returns to the welcome/main menu.
     if digit == "0" and body.sub_option is None:
