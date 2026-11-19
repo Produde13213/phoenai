@@ -99,7 +99,6 @@ AUDIO_FILES = {
     "english_option_2": "schoolinfoeng.wav",
     "english_option_3": "scholershipeng.wav",
     "english_option_4": "spekrep.wav",
-    "english_invalid": None,
     "english_idle": "idleeng.wav",
     "english_main_menu": "menueng.wav",
     "english_goodbye": "byeeng.wav",
@@ -152,6 +151,7 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
     history: list[ChatMessage] = Field(default_factory=list, max_length=8)
+    language: Literal["mr", "en"] = "mr"
 
 
 def audio_path(event: str) -> Path:
@@ -361,7 +361,7 @@ def chat(body: ChatRequest):
             detail="NVIDIA_API_KEY is not configured on the server.",
         )
 
-    messages = [{"role": "system", "content": load_system_prompt()}]
+    messages = [{"role": "system", "content": load_system_prompt() + ("\\n\\nReply in clear, simple English for this session." if body.language == "en" else "\\n\\nReply in clear, simple Marathi for this session.")}]
     for item in body.history[-8:]:
         messages.append({"role": item.role, "content": item.content})
     messages.append({"role": "user", "content": body.message})
