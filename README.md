@@ -93,3 +93,12 @@ Submenu answers are intentionally cautious. Add verified office-specific facts o
 Edit `sysprompt.txt` in the project root using Notepad or another text editor. The server reads it when each AI chat request is made, so restart is not normally needed after saving. The built-in accuracy, privacy, and prototype disclaimers in `main.py` remain in force; custom instructions are appended and cannot replace those rules.
 
 Do not put API keys, passwords, OTPs, or personal data in this file.
+
+
+## Quick office demo
+
+On Windows, double-click `start_demo.bat`. It creates a virtual environment if needed, installs the Python requirements, starts the local web server, and opens the browser demo at http://127.0.0.1:8000. Keep the terminal window open while presenting.
+
+The demo uses a numeric keypad: 0 returns to the main menu, 1–4 select the four services, and 5–9 demonstrate invalid input. The interface checks the prerecorded audio files and reports whether NVIDIA chat is configured. The menu and audio playback work without an NVIDIA API key; AI chat requires one.
+
+See [DEMO_CHECKLIST.md](DEMO_CHECKLIST.md) for the presentation sequence, setup checks, and limitations.
