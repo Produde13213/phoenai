@@ -1,24 +1,18 @@
 # PhoenAI — Marathi Information Assistant
 
-PhoenAI is a Marathi-first browser prototype with an IVR-style menu and an NVIDIA-powered chat assistant.
+PhoenAI is a Marathi-first browser prototype with an IVR-style menu and an NVIDIA-powered, text-only chat assistant.
 
 ## AI model
 
 Default model: `nvidia/nemotron-3.5-super-vl-120b-a12b`
 
-This is NVIDIA's Nemotron 3.5 Super VL model (120B total parameters, 12B active), listed with a free NVIDIA-hosted API endpoint. The model can accept text and image inputs; this prototype currently sends text chat only.
-
 You can override the model with the `NVIDIA_MODEL` environment variable.
 
 ## Configure your API key
 
-Set the environment variable named exactly:
+The application reads `NVIDIA_API_KEY` from the server's operating-system environment. A local `.env` file is also supported. On Windows, environment-variable names are case-insensitive, so an existing `nvidia_api_key` variable is recognized. On Linux they are case-sensitive.
 
-```text
-NVIDIA_API_KEY
-```
-
-The application reads `NVIDIA_API_KEY` from the server environment. On Windows, environment-variable names are case-insensitive; on Linux they are case-sensitive. Never paste your key into source code, HTML, GitHub, screenshots, or chat messages.
+Never paste your key into source code, HTML, GitHub, screenshots, or chat messages.
 
 PowerShell (current terminal only):
 
@@ -32,8 +26,6 @@ Persistent Windows user variable (run once, then open a new terminal):
 [Environment]::SetEnvironmentVariable("NVIDIA_API_KEY", "YOUR_NVIDIA_API_KEY", "User")
 ```
 
-If your key is already configured as `nvidia_api_key` on Windows, Windows treats that as the same environment-variable name. The app uses the canonical uppercase spelling.
-
 ## Run on Windows
 
 ```powershell
@@ -44,41 +36,42 @@ py -m venv .venv
 
 Open http://127.0.0.1:8000.
 
-If PowerShell blocks script activation, these commands do not require activation.
+## Prerecorded audio policy
+
+**PhoenAI must not synthesize speech.** Browser SpeechSynthesis, Edge TTS, NVIDIA text-to-speech, voice cloning, and other generated voices are not used. Chat answers are text-only.
+
+Audio is served only from WAV files committed in the repository:
+
+| Event | Recording |
+|---|---|
+| Welcome | `ttsfree-marathi-take2.wav` |
+| Button 1 — complaints | Not uploaded yet; no audio is substituted |
+| Button 2 — school information | `SCHOOLINFO.wav` |
+| Button 3 — scholarship | `schoolarship.wav` |
+| Button 4 — representative | `talktorep.wav` |
+| Invalid input | `inavlid.wav` |
+| Idle timeout | `idle.wav` |
+| Return to main menu | `mainmenu.wav` |
+| Goodbye | `bye.wav` |
+
+The existing filenames are preserved exactly. The misspellings in two filenames are retained so the app can serve the files already committed; they can be renamed later if desired.
+
+The browser demo provides controls to play the idle, invalid-input, main-menu, and goodbye recordings. Selecting buttons 2–4 plays their matching recording. Button 1 displays its text response and clearly reports that its recording is missing. The welcome recording is available in the audio player.
 
 ## API routes
 
 - `GET /` — browser interface
-- `GET /health` — health and configuration status (never returns the API key)
+- `GET /health` — health and configuration status; never returns the API key
 - `GET /api/config` — model name and whether a key is configured
-- `GET /api/greeting` — Marathi welcome text
-- `GET /api/greeting/audio` — repository WAV welcome recording
+- `GET /api/greeting` — welcome text and recording URL
+- `GET /api/audio` — prerecorded audio availability
+- `GET /api/audio/{event}` — serve an allow-listed WAV recording
 - `GET /api/menu` — IVR menu
-- `POST /api/ivr/digit` — demo menu selection, for example `{"digit":"1"}`
-- `POST /api/chat` — NVIDIA-powered assistant response
-
-Example chat body:
-
-```json
-{"message":"नमस्कार, तुम्ही काय मदत करू शकता?","history":[]}
-```
+- `POST /api/ivr/digit` — demo menu selection
+- `POST /api/chat` — NVIDIA-powered text response only
 
 ## Safety and telephony status
 
-This is a browser demo only. It does not connect to BSNL, a landline, SIP, PBX/EPABX, or live callers. Menu option 4 does not transfer a call. Do not connect it to an office phone system without the office's authorization and a reviewed telephony integration.
+This is a browser demo only. It does not connect to BSNL, a landline, SIP, PBX/EPABX, or live callers. Option 4 does not transfer a call, even though its prerecorded audio can be previewed. Do not connect it to an office phone system without office authorization and a reviewed telephony integration.
 
-The assistant is instructed not to invent official office procedures, benefit eligibility, addresses, phone numbers, or deadlines. Verify official information with the relevant office. Do not submit Aadhaar numbers, OTPs, passwords, bank details, or sensitive personal information.
-
-## Files
-
-```text
-.
-├── main.py
-├── requirements.txt
-├── .env.example
-├── .gitignore
-├── README.md
-├── ttsfree-marathi-take2.wav
-└── static/
-    └── index.html
-```
+The assistant must not invent official office procedures, benefit eligibility, addresses, phone numbers, or deadlines. Verify official information with the relevant office. Do not submit Aadhaar numbers, OTPs, passwords, bank details, or sensitive personal information.
