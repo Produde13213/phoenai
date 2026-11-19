@@ -75,3 +75,21 @@ The browser demo provides controls to play the idle, invalid-input, main-menu, a
 This is a browser demo only. It does not connect to BSNL, a landline, SIP, PBX/EPABX, or live callers. Option 4 does not transfer a call, even though its prerecorded audio can be previewed. Do not connect it to an office phone system without office authorization and a reviewed telephony integration.
 
 The assistant must not invent official office procedures, benefit eligibility, addresses, phone numbers, or deadlines. Verify official information with the relevant office. Do not submit Aadhaar numbers, OTPs, passwords, bank details, or sensitive personal information.
+
+
+## Guided IVR menu
+
+The browser demo now has guided submenus for all four choices:
+
+- **1 — Complaint help:** preparing a complaint and checking its status (the demo does not submit or look up complaints).
+- **2 — School information:** admission, accessibility/support, and school-related complaints.
+- **3 — Scholarships:** eligibility, application guidance, and application status (no government portal is connected).
+- **4 — Representative:** explains that this demo cannot transfer a call.
+
+Submenu answers are intentionally cautious. Add verified office-specific facts only after the office approves them.
+
+## Editing the AI system prompt
+
+Edit `sysprompt.txt` in the project root using Notepad or another text editor. The server reads it when each AI chat request is made, so restart is not normally needed after saving. The built-in accuracy, privacy, and prototype disclaimers in `main.py` remain in force; custom instructions are appended and cannot replace those rules.
+
+Do not put API keys, passwords, OTPs, or personal data in this file.
