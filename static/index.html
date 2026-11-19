@@ -183,9 +183,13 @@ $("idleDemoButton").addEventListener("click", async () => {
     return;
   }
   idleDemoCount = 0;
-  $("ivrReply").textContent = "Second idle timeout: playing the goodbye recording, then returning to the main menu.";
+  $("ivrReply").textContent = "Second idle timeout: playing the goodbye recording. The main menu returns when playback finishes.";
   await playRecording("/api/audio/goodbye");
   $("ivrChoices").replaceChildren();
+  $("player").onended = () => {
+    $("player").onended = null;
+    chooseIvrOption("0");
+  };
 });
 
 $("chatForm").addEventListener("submit", async event => {
