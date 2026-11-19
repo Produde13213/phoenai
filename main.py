@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from typing import Literal
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -11,6 +12,9 @@ from pydantic import BaseModel, Field
 ROOT = Path(__file__).resolve().parent
 STATIC = ROOT / "static"
 AUDIO = ROOT / "ttsfree-marathi-take2.wav"
+
+# Load a local .env when present; OS environment variables remain supported.
+load_dotenv(ROOT / ".env")
 
 NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
 DEFAULT_MODEL = "nvidia/nemotron-3.5-super-vl-120b-a12b"
@@ -149,8 +153,8 @@ def chat(body: ChatRequest):
     except HTTPException:
         raise
     except Exception as exc:
-        # Do not return credentials or raw provider response details to the browser.
-        print(f"NVIDIA API request failed: {type(exc).__name__}: {exc}")
+        # Keep credentials and raw provider error details out of browser responses and logs.
+        print(f"NVIDIA API request failed: {type(exc).__name__}")
         raise HTTPException(
             status_code=502,
             detail="The NVIDIA AI request failed. Check the server terminal and API key.",
